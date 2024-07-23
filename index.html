@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="javascripts/x-o.js"></script>
+    <script src="javascripts/mario.js"></script>
+    <script src="javascripts/tetris.js"></script>
+    <title>Game-center</title>
+</head>
+
+<body onload="tetris()">
+    <header id="h_1">
+        <ul>
+            <li onclick="xo()">X-O</li>
+            <li onclick="{ mario();}">Mario</li>
+        </ul>
+    </header>
+    <header id="h_2">
+        <button onclick="{location.reload()}" style="font-size: x-large; float: right;">X</button>
+        <button onclick="{document.body.requestFullscreen()}" style="font-size: x-large; float: right;"><img
+                style="width: 22px;" src="media/maximize.png" alt=""></button>
+        <button onclick="{document.exitFullscreen()}" style="font-size: x-large; float: right;"><img
+                style="width: 22px;" src="media/minimize-sign.png" alt=""></button>
+    </header>
+    <section id="game" style="display: none;">
+    </section>
+
+</body>
+
+</html>

@@ -1,0 +1,810 @@
+#include <iostream>
+#include<string>
+#include <SFML/Audio.hpp>
+#include <SFML/Graphics.hpp>
+#include<windows.h>
+#include<map>;
+using namespace std;
+using namespace sf;
+
+struct player
+{
+	Texture mario[5]; //بيخزن 5 صور لماريو
+	Sprite player;// المسؤول عن عرض ماريو 
+	int animation_player = 0; //بيغير الصوره بتاعت ماريو علشان يظهر انه بيتحرك
+	bool jump = 0; // لو 1 ينط لو 0 ثابت
+	bool down = 0;//لو 1 ينزل لو 0 ثابت
+	SoundBuffer s_jump;// صوت النطه
+	Sound sound_jump; // صوت النطه
+	float stop_jump = 0; //بيسجل اعلي مسافه يوصلها لما ينط 
+};
+
+struct enemy
+{
+	Texture t_enemy[2]; //بيسجل 2صور واحده وهو بيمشي والتانيه وهو بيموت 
+	Sprite s_enemy[15];//بيعرض 25 واحد علي الشاشه
+	SoundBuffer s_kill; //صوت الموته بتاعه العدو
+	Sound sound_kill; //صوت الموته بتاعه العدو
+	float px_f[15][2] // بيسجل البدايه والنهايه لكل عدو الي بيمشي فيها
+	{
+		{200,300},
+		{200,500},
+		{600,800},
+		{1000,1300},
+		{1500,2000},
+		{2500,3800},
+		{4200,4300},
+		{4500,4700},
+		{5000,5200},
+		{5300,5600},
+		{6000,6400},
+		{6200,6700},
+		{6800,6900},
+		{7050,7200},
+		{7300,7800}
+	};
+};
+
+struct fire               
+{
+	Texture t_fire; //بيسجل صوره للنار
+	Sprite s_fire[3];//بيسجل 3 للنار يعرضهم
+	int number_fire=2;//عدد الرصاص 0و1و2
+	bool _fire=0;//لو 1 يضرب نار 
+};
+
+struct coin
+{
+	Texture t_coin[4];//بيخزن 4 صور للكوين 
+	Sprite sp_coin[50]; //بيعرض 50 مره الكوين 
+	int score_coin =0; //بيعد عدد الكوين 
+	float px[5] = {100,1000,3000,5000,6000};//كل واحده من دي بيكون البدايه لعرض 10 كوين بعدها 
+	float py[5] = {400,200,200,200,400};// yكل مجموعه مكونه من 10 كوين وده بيكون مكان المجموعه في محور 
+	SoundBuffer s_coin;//صوت الكوين
+	Sound sound_coin;//صوت الكوين
+	int animation_coin = 0; //حركه الكوين
+};
+
+struct sound_n
+{
+	SoundBuffer s_; //صوت لاي حاجه 
+	Sound sound_;//صوت لاي حاجه 
+};
+
+struct background
+{
+	Texture texture1; //بيخزن صوره الخلفيه 
+	RectangleShape background;//بيعرض صوره الخلفيه 
+};
+
+struct land
+{
+	Texture t_land;//بيخزن صوره الارض 
+	 Sprite s_land;//بيعرض صوره الارض
+
+};
+
+struct font_score
+{
+	Font font; 
+	Text text;
+};
+
+struct stone
+{
+	Texture t_stone; //بيخزن صوره الحجر الي بيتكسر 
+	Sprite s_stone[18];// بيعرض 18 مره منه
+	SoundBuffer sound_b_stone;//صوت التكسير
+	Sound sound_stone;//صوت التكسير
+	float px[18] = {1000,1120,1240 ,1360,1480,1600,3000,3120,3240,3360,3480,3600,5000,5120,5240,5360,5480,5600 }; //x مكان كل حجر في محور 
+};
+
+struct s_stone
+{
+	Texture t_stone; //صوره الحجر الثابت
+	Sprite s_stone[3];//بيعرض 3منه
+	int in_stone=0;//بيحزن رقم الحجر لما ماريو يلمسه
+	float px[3] = {1000,3000,5000};//اماكن الحجر الثابت
+};
+
+struct castle
+{
+	Texture t_castle; //بيخزن صوره القلعه
+	Sprite s_castle; //بيعرضها
+};
+
+struct plane
+{
+	Texture t_plane; //بيخزن صوره الطائره 
+	Sprite s_plane;//بيعرضها 
+};
+
+struct ball
+{
+	Texture t_ball; //بيخزن صوره الكوره 
+	Sprite s_ball[2];//بيعرضها 
+};
+
+struct start
+{
+	Texture t_start; //بيخزن صوره البدايه و صوره المستوي الاعلي
+	Sprite s_start; //بيعرضهم
+};
+
+struct fire_plane
+{
+	Texture t_f_plane; //بيخزن صوره النار من الطائره
+	Sprite s__f_plane; //بيعرضها
+};
+
+//definition
+void d_player(player& player1); //يعرف ماريو في اول مستوي
+void d_enemy(enemy& enemy1);//بيعرف العدو في اول مستوي
+void d_fire(fire& fire1); //بيعرف النار الي ماريو بيضربها
+void d_coin(coin& coin1);//بيعرف الكوين
+void d_theme(sound_n& theme1);//بيعرف صوت الخلفيه
+void d_background(background& background1); //بيعرف صوره الخلفيه في اول مستوي
+void d_land(land& land1);//بيعرف الارض  في اول مستوي
+void d_font_score_l1(font_score& font_score1);// بيعرف الخط في اول مستوي
+void d_stone(stone& stone1);//بيعرف الحجر الي بيتكسر 
+void d_stone2(s_stone& stone2);//بيعرف الحجر الثابت
+void d_castle(castle&castle1); //بيعرف القلعه
+void d_ball(ball& ball1);//بيعرف الكوره الي بتنزل لما يخبط الحجر
+void d_start1_start2(start& start1, start& start2);//بيعرف صوره مقدمه اللعبه
+void d_sounds(sound_n & death, sound_n& down_live, sound_n& up_live, sound_n& explosion, sound_n& gun);//بيعرف صوت النار والانفجار بتاع الطياره ولما يموت 
+void d_plane(plane& plane1);//بيعرف الطياره في تاني مستوي
+void d_f_plane(fire_plane& fire_plane1); //بيعرف الصاروخ الي نازل من الطياره في تاني مستوي
+
+RenderWindow window(VideoMode(800, 500), "super mario");//نافذه اللعبه
+View vio(FloatRect(0, 0, 800, 500));//بيعرف الكاميرا
+
+//task
+void enemy0(player& player1, enemy& enemy1,fire& fire1);//ماريو يضرب نار علي العدو ونط يموتهم
+void move_r(player& player1);//يمشي يمين
+void move_l(player& player1,View &vio); //يمشي شمال
+void move_u(player& player1, land& land1, s_stone& stone2); //ينط
+void set_view(player& player1,View& vio, font_score& font_score1); //يحرك الكاميرا
+void task_coin(coin&coin1, player& player1);//يجمع الكوين
+void break_stone(player& player1, stone&stone1,ball&ball1); //ماريو بيكسر الحجر وتنزل الكوره
+void draw_stone2(s_stone& stone); //بيرسم الحجر الثابت 
+void uplevel(castle& castle1,player&player1 ,start &start2);//لما بيوصل للقلعه بيزود المستوي
+void mo_plane(plane& plane1, View& vio);//الطياره بتتحرك
+void task_fire(fire& fire1,player&player1);//ماريو يضرب نار
+void task_fire_plane(fire_plane& fire_plane1, player& player1, plane& plane1);//الطياره تنزل صاروخ
+
+coin coin1;
+int num_live = 3;//عدد المحاولات
+int num_fire=3;//عدد النار الي ماريو يضربهم
+int num_level = 0;//رقم المستوي الحالي و0 صوره البدايه
+
+bool dontloop =1 ; //دي معموله علشان يشغل صوت الخلفيه مره واحده بي في الجيم كله
+
+sound_n death;//صوت الموت
+sound_n down_live;//صوت نقص عدد المحاولات
+sound_n up_live;//صوت زياده عدد المحاولات 
+sound_n explosion;//صوت الانفجار
+sound_n gun;//صوت ضرب النار من ماريو
+
+int main()
+{
+	sound_n  theme1;//صوت الخلفيه 
+	if (dontloop)
+	{
+		d_theme(theme1);//بيشغل صوت الخلفيه لاول مره بس في الجيم كله
+	}
+	dontloop = 0;//بيقفل تكرار صوت لخلفيه
+	Event event;
+	window.setFramerateLimit(45);
+	vio.setCenter(400,250);
+	window.setView(vio);//بيرجع الكاميرا مكانها الافتراضي
+	
+
+	//تحت هنا بقا بناخد من كل استاركت متغير واحد
+	player player1;
+	enemy enemy1;
+	fire fire1;
+	background background1;
+    land land1;
+	font_score font_score1;
+	stone stone1;
+	s_stone stone2;
+	castle castle1;
+	plane plane1;
+	ball ball1;
+	start start1;
+	start start2;
+	fire_plane fire_plane1;//لغايه هنا
+
+	//هنا بنادي علي function بتاعت التعريف الحاجات الي موجوده في المستوين
+	d_start1_start2( start1,  start2);
+	d_sounds(death, down_live, up_live, explosion, gun);
+	d_stone(stone1);//صخور بتتكسر
+	d_stone2(stone2); //صخور ثابته
+	d_castle(castle1);
+	d_fire(fire1);
+	d_coin(coin1);
+	d_ball( ball1);
+	d_f_plane(fire_plane1);//لغايه هنا
+
+
+	d_plane(plane1);
+	d_player(player1);
+	d_enemy(enemy1);
+	d_background(background1);
+	d_land(land1);
+	d_font_score_l1(font_score1);
+	while (true)
+	{
+		//event 
+		//هنا بيكرر لغايه لما يلاقي حدث معين من keyboard
+		while (window.pollEvent(event))
+		{
+			if (event.type == Event::Closed)//لما يدوس علي x يقفل
+			{
+				window.close();
+			}
+			if (num_level == 0)
+			{
+				if (event.type == Event::KeyPressed && event.key.code == Keyboard::Q)
+				{
+					return 0;
+				}
+				else if (event.type == Event::KeyPressed && event.key.code == Keyboard::S)
+				{
+					num_level = 1;
+					main();
+				}
+			}
+			else
+			{
+				if (event.type == Event::KeyPressed && event.key.code == Keyboard::Right)//لما يدوس يمين
+				{
+					move_r(player1);//ينادي علي function بتاعه يمين
+				}
+				if (event.type == Event::KeyPressed && event.key.code == Keyboard::Left)
+				{
+					move_l(player1, vio);
+				}
+				if (event.type == Event::KeyPressed && (event.key.code == Keyboard::Up || event.key.code == Keyboard::Space))//لما يدوس مسطره او فوق ينط
+				{
+					if (!player1.down && !player1.jump)
+					{
+						player1.stop_jump = player1.player.getPosition().y - 180;//بيسجل قيمه الي المفروض ماريو يوصلها في النط وبعد كدا ينزل تاني
+						player1.jump = 1;//يبدا ينط
+						player1.sound_jump.play();//صوت النط
+					}
+
+				}
+				if (event.type == Event::KeyPressed && (event.key.code == Keyboard::LControl))//يضرب نار
+				{
+					if (fire1.number_fire >= 0 && num_fire > 0)
+					{
+						fire1._fire = 1;
+						num_fire--;
+						gun.sound_.play();
+					}
+					else
+					{
+						fire1.number_fire = 2;
+					}
+				}
+			}
+		}
+		window.clear();
+		if (num_live <= 0)//بيقارن هل اللاعب خسر ولا لا
+		{
+			num_level = 0;//بيرجع لصوره بدايه اللعبه
+			death.sound_.play();//صوت الموت يشتغل
+			Sleep(3000);//بيوقف الكود 3ثواني لغايه ما صوت ال gameover يخلص
+			num_live = 3;//بيرجع عدد المحاولات ل 3
+			main();//بيرجع اللعبه زي ما بدات من اول سطر في الكود كله
+		}
+		if (num_level == 0)window.draw(start1.s_start);//صوره البدايه
+		else   // بينفذ tasks الجيم كله هنا
+		{
+			window.draw(background1.background);
+			window.draw(land1.s_land);
+			font_score1.text.setString("  Score = " + to_string(coin1.score_coin) + "\t\tlives = " + to_string(num_live)+"\t\tfires = "+to_string(num_fire));
+			task_coin(coin1, player1);
+			set_view(player1, vio, font_score1);
+			enemy0(player1, enemy1 , fire1);
+			draw_stone2( stone2 );
+	     	uplevel(castle1, player1 , start2);
+			if (num_level == 2) mo_plane(plane1, vio);
+			move_u(player1, land1, stone2);
+			task_fire(fire1, player1);
+			window.draw(player1.player);
+			break_stone(player1, stone1, ball1);
+			task_fire_plane(fire_plane1, player1, plane1);
+		}
+		window.display();
+	}
+}
+
+
+///////////////////////////////////////////////////////////////////// definition level 1
+void d_player(player& player1)
+{
+	if (num_level == 1)
+	{
+		player1.mario[0].loadFromFile("Images/level1/mario/01.png");
+		player1.mario[1].loadFromFile("Images/level1/mario/02.png");
+		player1.mario[2].loadFromFile("Images/level1/mario/03.png");
+		player1.mario[3].loadFromFile("Images/level1/mario/04.png");
+		player1.mario[4].loadFromFile("Images/level1/mario/05.png");
+	}
+	else if (num_level == 2)
+	{
+		player1.mario[0].loadFromFile("Images/level2/mario/01.png");
+		player1.mario[1].loadFromFile("Images/level2/mario/02.png");
+		player1.mario[2].loadFromFile("Images/level2/mario/03.png");
+		player1.mario[3].loadFromFile("Images/level2/mario/04.png");
+		player1.mario[4].loadFromFile("Images/level2/mario/05.png");
+	}
+	player1.player.setTexture(player1.mario[0]);
+	player1.player.setScale(0.4, 0.4);//حجم الاعب 
+	player1.player.setPosition(25, 428);//بيحدد مكان اللاعب الافتراضي
+	player1.player.setOrigin(45, 85);//بيحدد نقطه الاصل في نص اللاعب
+	player1.s_jump.loadFromFile("Sound/jump.wav");//صوت
+	player1.sound_jump.setBuffer(player1.s_jump);//صوت
+}
+void d_enemy(enemy& enemy1)
+{
+	enemy1.s_kill.loadFromFile("Sound/kill.wav");
+	enemy1.sound_kill.setBuffer(enemy1.s_kill);
+	if (num_level == 1)
+	{
+		enemy1.t_enemy[0].loadFromFile("Images/level1/enemy1/1.png");
+		enemy1.t_enemy[1].loadFromFile("Images/level1/enemy1/3.png");
+	}
+	else if (num_level == 2)
+	{
+		enemy1.t_enemy[0].loadFromFile("Images/level2/enemy1/1.png");
+		enemy1.t_enemy[1].loadFromFile("Images/level2/enemy1/3.png");
+	}
+	for (int i = 0; i < 15; i++)
+	{
+		enemy1.s_enemy[i].setOrigin(16.5, 16);
+		enemy1.s_enemy[i].setPosition(enemy1.px_f[i][0], 445);//بيحدد مكان كل عدو الافتراضي
+	}
+}
+
+void d_background(background& background1)
+{
+	if (num_level == 1)
+		background1.texture1.loadFromFile("Images/level1/Playing_BackGround.png");
+	else if (num_level==2)
+		background1.texture1.loadFromFile("Images/level2/Playing_BackGround.png");
+	background1.background.setSize(Vector2f(7920, 768));
+	background1.background.setPosition(0, -150);
+	background1.background.setTexture(&background1.texture1);
+}
+
+void d_land(land& land1)
+{
+	if(num_level==1)
+		land1.t_land.loadFromFile("Images/level1/Land2.png");
+	else if (num_level==2)
+		land1.t_land.loadFromFile("Images/level2/Land2.png");
+	land1.s_land.setTexture(land1.t_land);
+	land1.s_land.setPosition(0, 460);
+}
+void d_font_score_l1(font_score& font_score1)
+{
+	font_score1.font.loadFromFile("font/SuperMario256.ttf");
+	font_score1.text.setFont(font_score1.font);
+	font_score1.text.setCharacterSize(30);
+	if (num_level==1)
+		font_score1.text.setFillColor(Color(225, 225, 40));
+	else if (num_level==2)
+		font_score1.text.setFillColor(Color(225, 150, 40));//لون الخط
+	font_score1.text.setOutlineThickness(3);
+}
+
+void d_fire(fire& fire1)
+{
+	fire1.t_fire.loadFromFile("Images/level1/fire.png");
+	for (int i = 0; i <= 2; i++)
+	{
+		fire1.s_fire[i].setTexture(fire1.t_fire);
+		fire1.s_fire[i].setOrigin(30, 20);
+		fire1.s_fire[i].setScale(0.6, 0.6);
+		fire1.s_fire[i].setPosition(-10000, -10000);//مكان افتراضي مش ظاهر للمستخدم
+	}
+}
+void d_coin(coin& coin1)
+{
+	coin1.s_coin.loadFromFile("Sound/coin.wav");
+	coin1.sound_coin.setBuffer(coin1.s_coin);
+	coin1.t_coin[0].loadFromFile("Images/level1/coin/01.png");
+	coin1.t_coin[1].loadFromFile("Images/level1/coin/02.png");
+	coin1.t_coin[2].loadFromFile("Images/level1/coin/03.png");
+	coin1.t_coin[3].loadFromFile("Images/level1/coin/04.png");
+	int j = 0;//بيعد 50 كوين 
+	for (int i = 0; i < 5; i++) //تكرار بيعدي علي اراي بتاع مكان بدايه في x , y
+	{
+		float px = coin1.px[i];//بدايه كل مجموعه من 5 مجموعات بتاعه الكوين في محور x
+		for ( int k=0; k < 10; k++)//تكرار بيعرض عند كل بدايه 10 كوين
+		{
+			coin1.sp_coin[j].setScale(0.3, 0.3);
+			coin1.sp_coin[j].setPosition(px, coin1.py[i]);//بيحدد المكان 
+			px += 50;
+			j++;
+		}
+	}
+}
+void d_theme(sound_n& theme1)
+{
+	theme1.s_.loadFromFile("Sound/theme.ogg");
+	theme1.sound_.setBuffer(theme1.s_);
+	theme1.sound_.setVolume(20);
+	theme1.sound_.play();
+	theme1.sound_.setLoop(50);
+}
+
+void d_stone(stone& stone1)//صخور بتتكسر
+{
+	stone1.t_stone.loadFromFile("Images/level1/stone/stone.png");
+	stone1.sound_b_stone.loadFromFile("Sound/bricksmash.wav");
+	stone1.sound_stone.setBuffer(stone1.sound_b_stone);
+	for (int i = 0; i < 18; i++)
+	{
+		stone1.s_stone[i].setTexture(stone1.t_stone);
+		stone1.s_stone[i].setPosition(stone1.px[i], 320);//بيحدد اماكن الصخور الي بتتكسر
+		stone1.s_stone[i].setScale(0.5, 0.5);
+	}
+	
+}
+void d_stone2(s_stone& stone2)//صخر ثابت
+{
+	stone2.t_stone.loadFromFile("Images/level1/stone/stone3.png");
+	for (int i = 0; i < 3; i++)
+	{
+		stone2.s_stone[i].setScale(0.5, 0.5);
+		stone2.s_stone[i].setTexture(stone2.t_stone);
+		stone2.s_stone[i].setPosition(stone2.px[i], 320);//بيحدد اماكن الصخور الثابته
+	}
+}
+void d_castle(castle& castle1)
+{
+	castle1.t_castle.loadFromFile("Images/level1/castle.png");
+	castle1.s_castle.setTexture(castle1.t_castle);
+	castle1.s_castle.setScale(0.3, 0.3);
+	castle1.s_castle.setPosition(7500, 350);//مكان القلعه
+}
+
+void d_ball(ball& ball1)
+{
+	ball1.t_ball.loadFromFile("Images/ball.png");
+	ball1.s_ball[0].setTexture(ball1.t_ball);
+	ball1.s_ball[1].setTexture(ball1.t_ball);
+	ball1.s_ball[0].setScale(0.3, 0.3);
+	ball1.s_ball[1].setScale(0.3, 0.3);
+	ball1.s_ball[0].setPosition(-500, -500);
+	ball1.s_ball[1].setPosition(-500, -500);
+
+}
+
+void d_start1_start2(start& start1, start& start2)//بيعرف صوره البدابه بتاعت اللعبه وصوره مستوي اعلي 
+{
+	start1.t_start.loadFromFile("Images/start.png");
+	start1.s_start.setTexture(start1.t_start);
+
+	start2.t_start.loadFromFile("Images/level up.png");
+	start2.s_start.setTexture(start2.t_start);
+	start2.s_start.setOrigin(400, 250);
+}
+
+void d_sounds(sound_n& death, sound_n& down_live, sound_n& up_live, sound_n& explosion, sound_n& gun)//بيعرف كل الاصوات الباقيه
+{
+	death.s_.loadFromFile("Sound/death.wav");
+	death.sound_.setBuffer(death.s_);
+
+	down_live.s_.loadFromFile("Sound/bb.wav");
+	down_live.sound_.setBuffer(down_live.s_);
+
+	up_live.s_.loadFromFile("Sound/dd.wav");
+	up_live.sound_.setBuffer(up_live.s_);
+	up_live.sound_.setVolume(20);
+
+	explosion.s_.loadFromFile("Sound/explosion.wav");
+	explosion.sound_.setBuffer(explosion.s_);
+
+	gun.s_.loadFromFile("Sound/gun.wav");
+	gun.sound_.setBuffer(gun.s_);
+}
+
+void d_plane(plane& plane1)//بيعرف الطياره
+{
+	plane1.t_plane.loadFromFile("Images/level2/plane.png");
+	plane1.s_plane.setTexture(plane1.t_plane);
+	plane1.s_plane.setScale(0.5, 0.5);
+	plane1.s_plane.setOrigin(120, 80);
+	plane1.s_plane.setPosition(60, 75);
+}
+
+void d_f_plane(fire_plane& fire_plane1)//بيعرف صاروخ الطياره
+{
+	fire_plane1.t_f_plane.loadFromFile("Images/level2/fire_plane.png");
+	fire_plane1.s__f_plane.setTexture(fire_plane1.t_f_plane);
+	fire_plane1.s__f_plane.setScale(0.5, 0.5);
+	fire_plane1.s__f_plane.setPosition(-500, -500);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////tasks
+void move_r(player& player1)//يمشي يمين
+{
+	if (player1.player.getPosition().x < 7600)player1.player.move(20, 0);//لو هو وصل عند النقطه 7500 مش يمشي
+	player1.player.setScale(0.4, 0.4);
+	player1.player.setTexture(player1.mario[player1.animation_player]);
+	player1.animation_player++;//بيغير شكل ماريو علشان يظهر انه بيتحرك
+}
+
+void move_l(player& player1, View& vio)//يمشي شمال
+{
+	player1.player.setScale(-0.4, 0.4);
+	if (player1.player.getPosition().x > vio.getCenter().x - 360)player1.player.move(-20, 0);//لما يوصل اقصي شمال شاشه اللعبه مش يمشي
+	player1.player.setTexture(player1.mario[player1.animation_player]);
+	player1.animation_player++;
+}
+
+void move_u(player& player1,land&land1 ,s_stone&stone2)//ينط
+{
+	if (player1.animation_player > 3)player1.animation_player = 0;
+	for (int i = 0; i < 3; i++)
+	{
+		if (player1.jump && !player1.down)//لو هو داس علي انه ينط 
+		{
+			player1.player.move(0, -1.6);//يمشي لفوق
+			player1.player.setTexture(player1.mario[4]);//شكل الصوره بتاعت ماريو وهو بينط
+		}
+		if (player1.down && !player1.jump)
+		{
+			player1.player.move(0, 2.3);//يمشي لتحت
+			player1.player.setTexture(player1.mario[0]);
+		}
+		if (player1.player.getPosition().y < player1.stop_jump)//لما يوصل اعلي ارتفاع يقفل النط ويشغل النزول لاسفل
+		{
+			player1.jump = 0;
+			player1.down = 1;
+		}
+
+		//player intersect with land or stone
+		if (player1.player.getGlobalBounds().intersects(land1.s_land.getGlobalBounds()))//لما يلمس الارض يقف
+		{
+			player1.down = 0;
+		}
+		if (player1.player.getGlobalBounds().intersects(stone2.s_stone[i].getGlobalBounds()) && player1.player.getPosition().y < stone2.s_stone[i].getPosition().y-20)//لما يلمس الصخره الثابته يقف ويسجل رقم الصخره
+		{
+			player1.down = 0;
+			stone2.in_stone = i;
+		}
+
+		//player intersect with bottom stone2
+	    if ((player1.player.getGlobalBounds().intersects(stone2.s_stone[i].getGlobalBounds()) && player1.player.getPosition().y > stone2.s_stone[i].getPosition().y ))//لما يلمس قاع الصخر يقع لغايه لما يوصل للارض
+		{
+			player1.jump = 0;
+			player1.down = 1; 
+		}
+		//player down after move stone 2
+		if (!player1.down && !player1.jump && !player1.player.getGlobalBounds().intersects(stone2.s_stone[stone2.in_stone].getGlobalBounds()) && !player1.player.getGlobalBounds().intersects(land1.s_land.getGlobalBounds()))//هنا بيقارن هل هو لسه علي الصخر الثابت ولا  لا
+		{                                                                                                                                                                                                                      //لو لا يبقي يبدء يقع لتحت            
+		    player1.down = 1;
+		}
+	}
+}
+
+void set_view(player&player1,View& vio,font_score&font_score1)//بيحرك الكاميرا
+{
+	if (player1.player.getPosition().x > vio.getCenter().x + 100 && player1.player.getPosition().x < 7300 )
+	{
+		vio.move(17, 0);
+		window.setView(vio);
+	}
+	font_score1.text.setPosition(vio.getCenter().x  -390, vio.getCenter().y - 245);
+	window.draw(font_score1.text);
+}
+
+void break_stone(player& player1, stone& stone1,ball&ball1) 
+{
+	for (int i = 0; i < 18; i++)//تكرار بيعدي علي كل الصخور
+	{
+		if (player1.jump && player1.player.getGlobalBounds().intersects(stone1.s_stone[i].getGlobalBounds()) && player1.player.getPosition().y > stone1.s_stone[i].getPosition().y)//لو ماريو لمس صخر 
+		{
+			if (ball1.s_ball[0].getPosition().x == -500)//لو اول كوره مخفيه 
+			{
+				ball1.s_ball[0].setPosition(stone1.s_stone[i].getPosition().x, stone1.s_stone[i].getPosition().y-90);//الكوره تاخد مكان الصخر
+			}
+			else if (ball1.s_ball[1].getPosition().x == -500)//لو تاني كوره مخفيه 
+			{
+				ball1.s_ball[1].setPosition(stone1.s_stone[i].getPosition().x, stone1.s_stone[i].getPosition().y-90);//الكوره تاخد مكان الصخر
+			}
+			else//لو الكورتين مش مخفيين 
+			{
+				ball1.s_ball[0].setPosition(-500, -500);//يخفي اول واحده
+				ball1.s_ball[1].setPosition(-500, -500);//يخفي تاني واحده
+			}
+			stone1.sound_stone.play();//صوت التكسير
+			stone1.s_stone[i].setPosition(-500, -500);//يحفي الصخر الي اتكسر
+		}
+		for (int j = 0; j < 2; j++)//بيعدي علي الكور
+		{
+			if (ball1.s_ball[j].getPosition().x != -500&& ball1.s_ball[j].getPosition().y < 430)//لو الكوره مش مخفيه ولم توصل للارض
+			{
+				ball1.s_ball[j].move(0, 0.2);//تتحرك الكوره لتحت
+			}
+			if (player1.player.getGlobalBounds().intersects(ball1.s_ball[j].getGlobalBounds()))//لما ماريو يلمس الكوره
+			{
+				up_live.sound_.play();
+				if (i %2==0) num_live++;//لو رقم الصخرالي نازل منه الكوره زوجي يزود عدد محاولات اللعبه
+				else if (i % 2==1) num_fire += 2;//لو رقم الصخره الي نازل منه الكوره فردي يزود 2 نار لماريو
+				ball1.s_ball[j].setPosition(-500, -500);//يخفي الكوره بعد لما لمسها
+			}
+			window.draw(ball1.s_ball[j]);
+		}
+		window.draw(stone1.s_stone[i]);
+	}
+}
+void draw_stone2( s_stone& stone2)//يرسم ااصخور الثابته
+{
+	for (int i = 0; i < 3; i++)
+	{
+		window.draw(stone2.s_stone[i]);
+	}
+}
+void task_coin(coin& coin1, player& player1)
+{
+	coin1.animation_coin++;//بيغير شكل الكوين الي بيظهر علشان تكون بتتحرك
+	if (coin1.animation_coin > 3)coin1.animation_coin = 0;
+
+	for (int i = 0; i < 50; i++)//بيعدي علي 50 كوين
+	{
+		coin1.sp_coin[i].setTexture(coin1.t_coin[coin1.animation_coin]);//بيغير شكل الكوين
+		if (player1.player.getGlobalBounds().intersects(coin1.sp_coin[i].getGlobalBounds()))//لما مايو يلمس الكوين
+		{
+			coin1.sp_coin[i].setPosition(-500, -500);//الكوين يختفي
+			coin1.sound_coin.play();//صوت الكوين
+			coin1.score_coin++;//يزود السكور 1
+		}
+		window.draw(coin1.sp_coin[i]);
+	}
+}
+void enemy0(player& player1, enemy& enemy1 ,fire&fire1)
+{
+	for (int i = 0; i < 15; i++)
+	{
+		enemy1.s_enemy[i].setTexture(enemy1.t_enemy[0]);
+		if (player1.player.getPosition().y < 410 && player1.jump == 0)//لما ماريو يكون فوق العدو 
+		{
+			//لما يلمس العدو ويكون فوق العدو
+			if ((player1.player.getGlobalBounds().intersects(enemy1.s_enemy[i].getGlobalBounds()) && player1.player.getPosition().y < enemy1.s_enemy[i].getPosition().y))
+			{
+				enemy1.sound_kill.play();//صوت قتل العدو
+				enemy1.s_enemy[i].setTexture(enemy1.t_enemy[1]);
+				Sleep(60);//بيقوف الكود لمده 0.06
+				window.draw(enemy1.s_enemy[i]);
+				enemy1.s_enemy[i].setPosition(-500, -500);//يخفي العدو
+			}
+		}
+		else if (player1.player.getGlobalBounds().intersects(enemy1.s_enemy[i].getGlobalBounds()))//لما العدو يلمس ماريو 
+		{
+			num_live--;//بينقص عدد المحاولات
+			down_live.sound_.play();
+			enemy1.s_enemy[i].setPosition(-500, -500);//يخفي العدو 
+		}
+		for (int j=0;j<=2;j++)//بيعدي علي النار الي ماريو بيضربها
+		{
+			if (fire1.s_fire[j].getGlobalBounds().intersects(enemy1.s_enemy[i].getGlobalBounds()))//لما النار تلمس العدو
+			{
+				enemy1.s_enemy[i].setTexture(enemy1.t_enemy[1]);//شكل العدو وهو بيموت
+				Sleep(60);
+				window.draw(enemy1.s_enemy[i]);
+				enemy1.s_enemy[i].setPosition(-500, -500);//العدو يختفي
+				fire1.s_fire[j].setPosition(-10000, -10000);//النار تختفي
+			}
+		}
+		if (enemy1.s_enemy[i].getPosition().x == enemy1.px_f[i][1]) { enemy1.s_enemy[i].setScale(1, 1); }//لما يكون العدو مكانه الاصلي يغير السكيل ل 1.1 وده الافتراضي بتاعه
+		if (enemy1.s_enemy[i].getPosition().x == enemy1.px_f[i][0]) { enemy1.s_enemy[i].setScale(-1, 1); }//لما يوصل لمكان نهايه حركته بغير السكيل ل -1 ويعكس شكله
+		if (enemy1.s_enemy[i].getScale().x == 1)	enemy1.s_enemy[i].move(-1, 0);//لو السكيل بتاعه 1.1 يمشي شمال
+		if (enemy1.s_enemy[i].getScale().x == -1) enemy1.s_enemy[i].move(1, 0);//لو السكيل بتاعه 1.1- يمشي يمين
+		window.draw(enemy1.s_enemy[i]);
+	}
+}
+void uplevel(castle& castle1, player& player1 ,start&start2)
+{
+	window.draw(castle1.s_castle); //يرسم القلعه
+	if (castle1.s_castle.getGlobalBounds().intersects(player1.player.getGlobalBounds()) &&player1.player.getPosition().y<430&&player1.player.getPosition().x>7550)//لما ماريو يلمس القلعه
+	{
+		if (num_level == 1)//لما يكون احنا في المستوي الاول يبقي نروح لتاني مستوي 
+		{
+			start2.s_start.setPosition(vio.getCenter().x, vio.getCenter().y);//صوره الوصول لمستوي التاني
+			window.clear();
+			window.draw(start2.s_start);
+			window.display();
+			Sleep(3000);//تاخير في الكود لمده 3 ث علان الصوره تبقي ثابته شويه
+			num_level = 2;//وصول للمستوي التاني
+			main();
+		}
+		else if (num_level == 2)//لما يكون احنا في تاني مستوي يبقي نرجع لقائمه الرئيسه
+		{
+			num_level = 0;
+			num_live = 3;
+			main();
+		}
+	}
+}
+
+void task_fire(fire& fire1,player&player1)
+{
+	if (fire1._fire)//لما يدوس كنترول
+	{
+		fire1.s_fire[fire1.number_fire].setPosition(player1.player.getPosition().x, player1.player.getPosition().y+10);//النار بتاخد مكان اللاعب
+		if (player1.player.getScale().x < 0)//لو اللاعب السكيل بالسالب يعني باصص شمال 
+		{
+			fire1.s_fire[fire1.number_fire].setScale(-0.5, 0.6);//يبقي النار تتعكس وتبص شمال برضه
+		}
+		else
+		{
+			fire1.s_fire[fire1.number_fire].setScale(0.5, 0.6);//النار في اتجاها العادي 
+		}
+		fire1.number_fire--;//بينقص النار الي ماريو ممكن يضربهم
+	}
+	fire1._fire = 0;//يقفل ضرب النار
+	for (int i = 0; i <= 2; i++)
+	{
+		if (fire1.s_fire[i].getPosition().x != -10000)//لو النار مش مختفيه 
+		{
+			if (fire1.s_fire[i].getScale().x == 0.5)//وتكون النار يمين
+			{
+				fire1.s_fire[i].move(15, 0);//تمشي يمين 
+				fire1.s_fire[i].move(15, 0);//تمشي يمين 
+			}
+			if (fire1.s_fire[i].getScale().x ==-0.5)//لما النار تكون باصه شمال 
+			{
+				fire1.s_fire[i].move(-15, 0);//تمشي شمال
+			}
+		}
+		if (fire1.s_fire[i].getPosition().x > vio.getCenter().x + 380|| fire1.s_fire[i].getPosition().x < vio.getCenter().x - 380)//لو النر وصلت لاقصي يمين الشاشه او اقصي شمال الشاشه
+		{
+			fire1.s_fire[i].setPosition(-10000, -10000);//تختفي النار
+		}
+		window.draw(fire1.s_fire[i]);
+	}
+}
+
+void task_fire_plane(fire_plane& fire_plane1, player& player1, plane& plane1)
+{
+	if (abs(player1.player.getPosition().x - plane1.s_plane.getPosition().x) < 5)
+	{
+		if (fire_plane1.s__f_plane.getPosition().x == -500)
+		{
+			fire_plane1.s__f_plane.setPosition(plane1.s_plane.getPosition().x - 5, plane1.s_plane.getPosition().y);
+		}
+	}
+	if (fire_plane1.s__f_plane.getPosition().y != -500 && fire_plane1.s__f_plane.getPosition().y < 405)
+	{
+		fire_plane1.s__f_plane.move(0, 5);
+	}
+	else
+	{
+		fire_plane1.s__f_plane.setPosition(-500, -500);
+	}
+
+	if (fire_plane1.s__f_plane.getGlobalBounds().intersects(player1.player.getGlobalBounds()))
+	{
+		num_live--;
+		explosion.sound_.play();
+		fire_plane1.s__f_plane.setPosition(-500, -500);
+	}
+	window.draw(fire_plane1.s__f_plane);
+}
+
+void mo_plane(plane& plane1, View& vio)
+{
+	if (plane1.s_plane.getPosition().x < vio.getCenter().x - 350)plane1.s_plane.setScale(0.5, 0.5);
+	if (plane1.s_plane.getPosition().x > vio.getCenter().x + 350)plane1.s_plane.setScale(-0.5, 0.5);
+	if (plane1.s_plane.getScale().x == 0.5)	plane1.s_plane.move(8, 0);
+	if (plane1.s_plane.getScale().x == -0.5)plane1.s_plane.move(-8, 0);
+	window.draw(plane1.s_plane);
+}
